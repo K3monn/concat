@@ -8,7 +8,12 @@ export function WhiteboardCanvas({ roomId, onEditorMount }: { roomId: string; on
 
   return (
     <div className="shared-board-canvas">
-      <Tldraw store={store} options={{ deepLinks: true }} onMount={onEditorMount} />
+      <Tldraw
+        store={store}
+        licenseKey={process.env.NEXT_PUBLIC_TLDRAW_LICENSE_KEY}
+        options={{ deepLinks: true }}
+        onMount={onEditorMount}
+      />
     </div>
   );
 }
