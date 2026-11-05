@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { streamText, generateObject } from "ai";
+import { streamText, generateObject, type ModelMessage } from "ai";
 import { z } from "zod";
 
 // -----------------------------------------------------------------------
@@ -37,6 +37,9 @@ const taughtKnowledgeSchema = z.object({
       })
     )
     .describe("Only reasoning the student actually voiced — not reasoning that seems implied."),
+  explicitAssumptions: z
+    .array(z.string())
+    .describe("Only assumptions the student explicitly named and examined; do not infer unstated assumptions."),
   explicitComparisons: z
     .array(
       z.object({
@@ -155,6 +158,7 @@ Extract ONLY what the student explicitly stated. Do not infer, complete, correct
 anything the student didn't actually say — even if it seems obviously implied. Do not use
 outside knowledge of the subject to fill in or fix anything. If something was left ambiguous
 or unstated, leave it out rather than guessing at what the student probably meant.
+When identifying assumptions, include only assumptions the student explicitly named and examined.
 
 Mode: ${mode}
 
@@ -168,6 +172,12 @@ here cannot be used later; anything added here that the student didn't actually 
 the test phase "cheat" with knowledge the student never actually demonstrated. Be precise and
 conservative.
 `.trim();
+}
+
+function imageContent(dataUrl: string) {
+  const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+  if (!match) return null;
+  return { type: "image" as const, image: Buffer.from(match[2], "base64"), mediaType: match[1] as "image/jpeg" | "image/png" | "image/webp" };
 }
 
 function getTestSystemPrompt(mode: Mode, knowledge: TaughtKnowledge): string {
@@ -232,15 +242,31 @@ const requestSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("teach"),
     mode: z.enum(["concept", "practice"]),
+    topic: z.string().max(120).optional(),
+    boardImage: z.string().max(7_000_000).optional(),
     messages: z.array(z.object({
       role: z.enum(["user", "assistant"]),
       content: z.string().trim().min(1).max(8_000),
     })).min(1).max(30),
   }),
   z.object({
+    action: z.literal("board-coach"),
+    mode: z.enum(["concept", "practice"]),
+    topic: z.string().max(120).optional(),
+    transcript: z.string().max(20_000).optional(),
+    boardImage: z.string().min(1).max(7_000_000),
+  }),
+  z.object({
     action: z.literal("extract"),
     mode: z.enum(["concept", "practice"]),
+    topic: z.string().max(120).optional(),
+    boardImage: z.string().max(7_000_000).optional(),
     transcript: z.string().trim().min(1).max(20_000),
+  }),
+  z.object({
+    action: z.literal("scenario"),
+    mode: z.enum(["concept", "practice"]),
+    knowledge: taughtKnowledgeSchema,
   }),
   z.object({
     action: z.literal("test"),
@@ -291,22 +317,54 @@ export async function POST(request: NextRequest) {
     const data = parsed.data;
 
     if (data.action === "teach") {
+      const board = data.boardImage ? imageContent(data.boardImage) : null;
+      const messages: ModelMessage[] = data.messages.map((message, index) => {
+        const isLastUser = index === data.messages.length - 1 && message.role === "user";
+        return isLastUser && board
+          ? { role: "user", content: [{ type: "text", text: message.content }, board] }
+          : message;
+      });
       const result = streamText({
         model,
-        system: getTeachSystemPrompt(data.mode),
-        messages: data.messages,
+        system: `${getTeachSystemPrompt(data.mode)}${data.topic?.trim() ? `\n\nSession topic: ${data.topic.trim()}` : ""}\n\nWhen a whiteboard image is attached, consider only what is visibly written or drawn as student-taught information. Ask about unclear parts instead of guessing.`,
+        messages,
         maxOutputTokens: 500,
       });
       return result.toTextStreamResponse();
     }
 
+    if (data.action === "board-coach") {
+      const board = imageContent(data.boardImage);
+      if (!board) return NextResponse.json({ error: "The whiteboard image could not be read." }, { status: 400 });
+      const prompt = `Review the student's current whiteboard after a pause in their work.\n\nMode: ${data.mode}\nTopic: ${data.topic?.trim() || "Not specified"}\n\nRecent conversation:\n${data.transcript?.trim() || "No chat messages yet; use only the visible whiteboard."}\n\nLook only at legible writing and visible relationships in the attached image. If a key part is unclear, ask the student to clarify it. Do not assume missing steps or claim that an idea is correct using outside subject knowledge. Do not reveal a solution. Choose one useful next move: ask one focused Socratic question about a visible claim, step, or assumption; or, in practice mode when the method is clear, give one short analogous problem for the student to solve. Keep it brief and conversational. Do not announce that you analyzed an image.`;
+      const result = streamText({
+        model,
+        system: `You are CONCAT, a curious learning partner. Your role is to help the student strengthen understanding, not to lecture or grade. For concept mode, prefer a focused why, connection, or what-if question. For practice mode, ask about the reasoning behind a visible step or offer one structurally similar unsolved problem. ${data.mode === "concept" ? "Concept mode is active." : "Practice mode is active."}`,
+        messages: [{ role: "user", content: [{ type: "text", text: prompt }, board] }],
+        maxOutputTokens: 220,
+      });
+      return result.toTextStreamResponse();
+    }
+
     if (data.action === "extract") {
+      const prompt = `${getKnowledgeExtractionPrompt(data.mode, data.transcript)}\n\n${data.topic?.trim() ? `Session topic: ${data.topic.trim()}` : ""}\nTreat the attached whiteboard as student-authored evidence. Extract only content that is legible and explicitly represented; do not infer missing steps.`;
+      const board = data.boardImage ? imageContent(data.boardImage) : null;
       const result = await generateObject({
         model,
         schema: taughtKnowledgeSchema,
-        prompt: getKnowledgeExtractionPrompt(data.mode, data.transcript),
+        messages: [{ role: "user", content: board ? [{ type: "text", text: prompt }, board] : prompt }],
       });
       return NextResponse.json({ knowledge: result.object });
+    }
+
+    if (data.action === "scenario") {
+      const result = streamText({
+        model,
+        system: `You are CONCAT, creating one short application question for a student. Use only the taught knowledge provided. Ask one fresh, related scenario that requires the student to retrieve and apply the idea. Do not include a hint, explanation, rubric, or answer. Use plain, encouraging language.`,
+        prompt: `Mode: ${data.mode}\n\nTaught knowledge:\n${JSON.stringify(data.knowledge, null, 2)}\n\nAsk one new scenario question now.`,
+        maxOutputTokens: 180,
+      });
+      return result.toTextStreamResponse();
     }
 
     if (data.action === "test") {

@@ -1,22 +1,14 @@
 "use client";
 
-import { Tldraw } from "tldraw";
+import { useSyncDemo } from "@tldraw/sync";
+import { Tldraw, type Editor } from "tldraw";
 
-interface CanvasProps {
-  onCanvasChange?: (svgOrSnapshot: unknown) => void;
-}
+export function WhiteboardCanvas({ roomId, onEditorMount }: { roomId: string; onEditorMount: (editor: Editor) => void }) {
+  const store = useSyncDemo({ roomId });
 
-export function WhiteboardCanvas({ onCanvasChange }: CanvasProps) {
   return (
-    <div className="w-full h-full relative min-h-[500px] border rounded-lg overflow-hidden">
-      <Tldraw
-        onMount={(editor) => {
-          editor.sideEffects.registerBeforeChangeHandler("shape", (_prev, next) => {
-            onCanvasChange?.(editor.getSnapshot());
-            return next;
-          });
-        }}
-      />
+    <div className="shared-board-canvas">
+      <Tldraw store={store} options={{ deepLinks: true }} onMount={onEditorMount} />
     </div>
   );
 }

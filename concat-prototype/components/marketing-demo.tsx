@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUpRight, ChevronDown, Sparkles } from "lucide-react";
 
 const prompts = {
   concept: {
     topic: "How do plants turn sunlight into food?",
     student: "Plants take in sunlight and use it to turn water and carbon dioxide into sugar. The leaves are where most of it happens.",
     question: "Nice start. You mentioned the ingredients. What role do you think sunlight plays in changing them into sugar?",
+    prompt: "Teach me the big picture in your own words.",
     placeholder: "Try explaining the “why” in your own words…",
   },
   practice: {
     topic: "Solve 3x + 7 = 22",
     student: "I subtract 7 from both sides, so 3x equals 15. Then I divide by 3, which means x is 5.",
     question: "You found x. Why does subtracting 7 from both sides keep the equation balanced?",
+    prompt: "Walk me through each step and why it works.",
     placeholder: "Explain why that step works…",
   },
 };
@@ -118,15 +119,20 @@ export function MarketingDemo() {
 
   return (
     <div className="demo-card" id="demo-card">
-      <div className="demo-bar"><span><span className="demo-dot"/> YOUR SESSION</span><label> <select aria-label="Choose a learning mode" value={mode} onChange={(event) => switchMode(event.target.value as "concept" | "practice")}><option value="concept">CONCEPT MODE</option><option value="practice">PRACTICE MODE</option></select><ChevronDown size={13}/></label></div>
-      <div className="demo-topic"><span>LET’S EXPLORE</span><h3>{active.topic}</h3></div>
-      <div className="demo-chat"><div className="chat-avatar student-avatar">Y</div><div className="chat-bubble student-bubble"><span>YOU · TEACHING</span><p>{active.student}</p></div></div>
-      {!submitted && <div className="demo-chat coach-chat"><div className="chat-avatar ai-avatar"><Sparkles size={14}/></div><div className="chat-bubble ai-bubble"><span>{applied ? "CONCAT · APPLY" : "CONCAT · CURIOUS"}</span><p>{applied ? reply : active.question}</p></div></div>}
-      {submitted && <>
-        <div className="demo-chat"><div className="chat-avatar student-avatar">Y</div><div className="chat-bubble student-bubble"><span>YOU · THINKING IT THROUGH</span><p>{answer}</p></div></div>
-        <div className="demo-chat coach-chat"><div className="chat-avatar ai-avatar"><Sparkles size={14}/></div><div className="chat-bubble ai-bubble"><span>CONCAT · {applied ? "APPLY" : "CURIOUS"}</span><p>{loading ? (reply || "Thinking through your explanation…") : error || reply}</p></div></div>
-      </>}
-      {!submitted ? <form className="demo-prompt" onSubmit={submitAnswer}><label htmlFor="demo-answer">{applied ? "YOUR TURN · APPLY" : "YOUR TURN"}</label><div><input id="demo-answer" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder={applied ? "Explain your reasoning in this scenario…" : active.placeholder} disabled={loading}/><button aria-label="Send your explanation" type="submit" disabled={loading || !answer.trim()}><ArrowUpRight size={15}/></button></div>{error && <span className="demo-error">{error}</span>}</form> : <button className="demo-apply" onClick={askForScenario} disabled={loading}><ArrowRight size={14}/>{loading ? "Thinking…" : "Try a new scenario"}</button>}
+      <div className="demo-bar"><div className="demo-brand"><strong>CONCAT</strong><span>Your curious study partner</span></div><label><span className="sr-only">Choose a learning mode</span><select aria-label="Choose a learning mode" value={mode} onChange={(event) => switchMode(event.target.value as "concept" | "practice")}><option value="concept">Concept mode</option><option value="practice">Practice mode</option></select></label></div>
+      <div className="demo-topic"><span>SESSION TOPIC</span><h3>{active.topic}</h3></div>
+      <div className="demo-mode-note">{active.prompt}</div>
+      <div className="demo-conversation" aria-live="polite">
+        {messages.filter((message) => !message.content.startsWith("Ask me one concise, new what-if scenario")).map((message, index) => (
+          <div className={`demo-chat ${message.role === "assistant" ? "coach-chat" : ""}`} key={`${index}-${message.role}`}>
+            <div className={`chat-bubble ${message.role === "user" ? "student-bubble" : "ai-bubble"}`}><span>{message.role === "user" ? index === 0 ? "YOU · TEACHING" : "YOU · THINKING IT THROUGH" : `CONCAT · ${applied ? "APPLY" : "CURIOUS"}`}</span><p>{message.content}</p></div>
+          </div>
+        ))}
+        {loading && reply && <div className="demo-chat coach-chat"><div className="chat-bubble ai-bubble"><span>CONCAT · CURIOUS</span><p>{reply}</p></div></div>}
+        {loading && !reply && <div className="demo-thinking">CONCAT is thinking…</div>}
+      </div>
+      {error && <p className="demo-error" role="alert">{error}</p>}
+      {!submitted ? <form className="demo-prompt" onSubmit={submitAnswer}><label htmlFor="demo-answer">YOUR TURN</label><div><textarea id="demo-answer" rows={2} value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder={applied ? "Explain your reasoning in this scenario…" : active.placeholder} disabled={loading}/><button type="submit" disabled={loading || !answer.trim()}>{loading ? "Thinking…" : "Send"}</button></div></form> : <button className="demo-apply" onClick={askForScenario} disabled={loading}>{loading ? "Thinking…" : "Try a new scenario ↗"}</button>}
       <div className="demo-progress"><span>TEACH</span><i/><span className={submitted ? "is-done" : ""}>QUESTION</span><i/><span className={applied ? "is-done" : ""}>APPLY</span><i/><span className={applied && submitted ? "is-done" : ""}>REFLECT</span></div>
     </div>
   );
