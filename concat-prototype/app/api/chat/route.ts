@@ -287,9 +287,9 @@ function createMuseModel() {
   const apiKey = process.env.META_MUSE_API_KEY;
   if (!apiKey) return null;
 
-  const baseURL = (process.env.META_MUSE_API_URL || "https://api.meta.ai/v1")
-    .replace(/\/+$/, "")
-    .replace(/\/v1$/, "");
+  // The Anthropic provider appends `/messages`, so keep Meta's `/v1` prefix
+  // in the base URL to send requests to `/v1/messages`.
+  const baseURL = (process.env.META_MUSE_API_URL || "https://api.meta.ai/v1").replace(/\/+$/, "");
   const modelId = process.env.META_MUSE_MODEL_ID || "muse-spark-1.3";
   const meta = createAnthropic({ authToken: apiKey, baseURL });
   return meta(modelId);
