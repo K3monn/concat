@@ -48,6 +48,9 @@ async function readStream(payload: Record<string, unknown>, onChunk: (text: stri
     onChunk(text);
   }
   text += decoder.decode();
+  if (!text.trim()) {
+    throw new Error("Meta Muse returned no visible response. Please try again.");
+  }
   onChunk(text);
   return text;
 }

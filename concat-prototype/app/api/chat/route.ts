@@ -328,7 +328,7 @@ export async function POST(request: NextRequest) {
         model,
         system: `${getTeachSystemPrompt(data.mode)}${data.topic?.trim() ? `\n\nSession topic: ${data.topic.trim()}` : ""}\n\nWhen a whiteboard image is attached, consider only what is visibly written or drawn as student-taught information. Ask about unclear parts instead of guessing.`,
         messages,
-        maxOutputTokens: 500,
+        maxOutputTokens: 2048,
       });
       return result.toTextStreamResponse();
     }
@@ -341,7 +341,7 @@ export async function POST(request: NextRequest) {
         model,
         system: `You are CONCAT, a curious learning partner. Your role is to help the student strengthen understanding, not to lecture or grade. For concept mode, prefer a focused why, connection, or what-if question. For practice mode, ask about the reasoning behind a visible step or offer one structurally similar unsolved problem. ${data.mode === "concept" ? "Concept mode is active." : "Practice mode is active."}`,
         messages: [{ role: "user", content: [{ type: "text", text: prompt }, board] }],
-        maxOutputTokens: 220,
+        maxOutputTokens: 2048,
       });
       return result.toTextStreamResponse();
     }
@@ -362,7 +362,7 @@ export async function POST(request: NextRequest) {
         model,
         system: `You are CONCAT, creating one short application question for a student. Use only the taught knowledge provided. Ask one fresh, related scenario that requires the student to retrieve and apply the idea. Do not include a hint, explanation, rubric, or answer. Use plain, encouraging language.`,
         prompt: `Mode: ${data.mode}\n\nTaught knowledge:\n${JSON.stringify(data.knowledge, null, 2)}\n\nAsk one new scenario question now.`,
-        maxOutputTokens: 180,
+        maxOutputTokens: 2048,
       });
       return result.toTextStreamResponse();
     }
@@ -372,7 +372,7 @@ export async function POST(request: NextRequest) {
         model,
         system: getTestSystemPrompt(data.mode, data.knowledge),
         prompt: data.question,
-        maxOutputTokens: 800,
+        maxOutputTokens: 4096,
       });
       return result.toTextStreamResponse();
     }
