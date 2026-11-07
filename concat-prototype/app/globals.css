@@ -629,3 +629,149 @@ h1 em,h2 em { font-weight:400; color:#d8826e; }
     text-align: center;
   }
 }
+/* Ensure proper box sizing and prevent horizontal overflow across all devices */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Adjust standard container width for smaller mobile padding */
+.shell {
+  width: min(1180px, calc(100% - 32px));
+  margin-inline: auto;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  /* Navigation Bar */
+  .nav {
+    height: 64px;
+    padding: 0 1rem;
+    gap: 0.5rem;
+  }
+
+  .nav-links {
+    display: none; /* Hide desktop navigation links on small screens */
+  }
+
+  .nav-cta {
+    padding: 8px 12px;
+    font-size: 10px;
+    gap: 6px;
+  }
+
+  /* Hero Section */
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding-top: 24px;
+  }
+
+  .hero h1 {
+    font-size: clamp(48px, 12vw, 76px);
+    letter-spacing: -3px;
+    margin: 20px 0;
+  }
+
+  .hero-text {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .hero-actions .button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Interactive Hero Graphic Scaling */
+  .hero-art {
+    min-height: 420px;
+    padding: 18px;
+    border-radius: 40px 40px 5px 5px;
+  }
+
+  .cell-stage {
+    left: 2%;
+    right: 2%;
+    top: 80px;
+    transform: scale(0.85);
+    transform-origin: top center;
+  }
+
+  .sticky-note {
+    left: 4%;
+    bottom: 40px;
+    width: 180px;
+    padding: 12px;
+  }
+
+  .coach-card {
+    right: 4%;
+    bottom: 20px;
+    width: 210px;
+    padding: 12px;
+  }
+
+  /* Structural Grids */
+  .problem-grid,
+  .moments,
+  .steps,
+  .mode-cards,
+  .audience-cards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .step {
+    padding: 16px 0;
+    border-left: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .step + .step {
+    border-top: 1px solid #565a53;
+  }
+
+  /* Interactive Demo Section */
+  .demo-shell {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .demo-card {
+    width: 100%;
+    padding: 16px;
+  }
+
+  /* Educator Banner */
+  .educator-strip {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  /* Footer */
+  .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .footer-inner > div {
+    margin-left: 0;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+}
