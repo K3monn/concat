@@ -531,3 +531,101 @@ h1 em,h2 em { font-weight:400; color:#d8826e; }
 .home-page .bubble-a::after,.home-page .bubble-b::after{content:"→";position:absolute;top:50%;right:-12%;transform:translate(50%,-50%);color:#2b5940;font:16px/1 var(--font-mono)}
 @media(max-width:600px){.home-page .concept-graphic{width:100%;height:258px;margin:20px auto 24px;transform:none}.home-page .bubble-a,.home-page .bubble-b,.home-page .bubble-c{left:10%;right:auto;top:0;bottom:auto;width:80%;height:70px;padding:9px 12px;font-size:13px}.home-page .bubble-b{top:91px}.home-page .bubble-c{top:182px;width:80%;height:70px;font-size:13px}.home-page .bubble-a::after,.home-page .bubble-b::after{content:"↓";top:calc(100% + 9px);right:50%;transform:translateX(50%)}}
 @media(max-width:760px){.home-page .hero h1{line-height:.97;margin-bottom:34px;padding-bottom:.1em}.home-page .hero-hand-scribble{top:13%;right:8%;left:auto;font-size:13px}}
+/* 1. Prevent Safari & macOS from rendering standard text glyphs as Apple Color Emojis */
+@supports (font-variant-emoji: text) {
+  .chalk-note,
+  .art-sun,
+  .mode-star,
+  .demo-sparkle,
+  .final-spark {
+    font-variant-emoji: text;
+  }
+}
+
+.chalk-note,
+.art-sun,
+.mode-star,
+.demo-sparkle,
+.final-spark {
+  /* Fallback: force monochrome rendering */
+  font-family: inherit;
+  color: currentColor;
+}
+
+/* 2. Responsive iPhone / Mobile Layout Styles */
+.shell {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+/* Mobile Adjustments (iPhone Portrait & Landscape) */
+@media (max-width: 768px) {
+  /* Navigation */
+  .nav {
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  .nav-links {
+    display: none; /* Hide secondary desktop links on mobile */
+  }
+
+  /* Hero section */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .hero-copy h1 {
+    font-size: 2.75rem;
+    line-height: 1.1;
+  }
+
+  .hero-art {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Grid Layouts Stack into Single Columns */
+  .problem-grid,
+  .moments,
+  .steps,
+  .mode-cards,
+  .audience-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Recall Flow Sequence */
+  .recall-flow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .recall-flow-arrow {
+    transform: rotate(90deg);
+    margin: 0 auto;
+  }
+
+  /* Educator Strip */
+  .educator-strip {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+  }
+
+  /* Footer */
+  .footer-inner {
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: center;
+  }
+}
